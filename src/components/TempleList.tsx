@@ -1,5 +1,6 @@
 import { MapPin, Edit, Trash2 } from 'lucide-react';
 import { adminAPI } from '../api';
+import ImageFromDrive from './ImageFromDrive';
 
 interface Temple {
   id: number;
@@ -28,6 +29,23 @@ export default function TempleList({ temples, onEdit, onRefresh }: TempleListPro
     }
   };
 
+  // 🧠 Helper functions (same logic from HomePage)
+  const extractDriveFileId = (url: string) => {
+    if (!url) return null;
+    const match = url.match(/\/d\/([^/]+)/);
+    if (match && match[1]) return match[1];
+    const altMatch = url.match(/id=([^&]+)/);
+    if (altMatch && altMatch[1]) return altMatch[1];
+    return null;
+  };
+
+  const getDriveImageURL = (driveLink: string) => {
+    const fileId = extractDriveFileId(driveLink);
+    return fileId
+      ? `https://drive.google.com/uc?export=view&id=${fileId}`
+      : 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg';
+  };
+
   if (temples.length === 0) {
     return (
       <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
@@ -41,13 +59,10 @@ export default function TempleList({ temples, onEdit, onRefresh }: TempleListPro
       {temples.map((temple) => (
         <div key={temple.id} className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="h-48 overflow-hidden bg-gradient-to-br from-orange-200 to-red-200">
-            <img
-              src={temple.image_url}
+            <ImageFromDrive
+              driveLink={temple.image_url}
               alt={temple.name}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg';
-              }}
             />
           </div>
           <div className="p-6">

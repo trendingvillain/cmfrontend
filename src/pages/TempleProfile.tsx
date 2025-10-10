@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, ArrowLeft } from 'lucide-react';
 import { templeAPI, eventAPI } from '../api';
+// ✅ Import the reusable ImageFromDrive component
+import ImageFromDrive from '../components/ImageFromDrive'; 
 
 interface Temple {
   id: number;
@@ -28,6 +30,8 @@ export default function TempleProfile() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 🧹 Removed the redundant getDriveImageURL helper function
+
   useEffect(() => {
     if (id) {
       fetchTempleData();
@@ -35,15 +39,25 @@ export default function TempleProfile() {
   }, [id]);
 
   const fetchTempleData = async () => {
+    // ⚠️ Ensure the ID is a valid number before making API calls
+    const templeId = Number(id);
+    if (isNaN(templeId)) {
+        console.error('Invalid Temple ID');
+        setLoading(false);
+        return;
+    }
+
     try {
       const [templeRes, eventsRes] = await Promise.all([
-        templeAPI.getById(Number(id)),
-        eventAPI.getByTemple(Number(id)),
+        templeAPI.getById(templeId),
+        eventAPI.getByTemple(templeId),
       ]);
+      // Assuming API responses structure is: { data: { temple: {...} } }
       setTemple(templeRes.data.temple);
       setEvents(eventsRes.data.events);
     } catch (error) {
       console.error('Error fetching temple data:', error);
+      setTemple(null); // Explicitly set to null on error
     } finally {
       setLoading(false);
     }
@@ -86,13 +100,11 @@ export default function TempleProfile() {
 
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden mb-8">
           <div className="h-96 overflow-hidden bg-gradient-to-br from-orange-200 to-red-200">
-            <img
-              src={temple.image_url}
+            {/* ✅ Use the custom ImageFromDrive component here */}
+            <ImageFromDrive
+              driveLink={temple.image_url}
               alt={temple.name}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg';
-              }}
             />
           </div>
           <div className="p-8">
@@ -130,10 +142,13 @@ export default function TempleProfile() {
                   <h3 className="text-2xl font-bold mb-2">{event.title}</h3>
                   <div className="flex items-center">
                     <Calendar className="w-5 h-5 mr-2" />
-                    <span className="text-orange-100">{formatDate(event.date)}</span>
+                    <span className="text-orange-100">
+                      {formatDate(event.date)}
+                    </span>
                   </div>
                 </div>
                 <div className="p-6">
+                  {/* Optional: Add a link or button to view photos, videos, and bills */}
                   <button
                     onClick={() => navigate(`/event/${event.id}`)}
                     className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-md"

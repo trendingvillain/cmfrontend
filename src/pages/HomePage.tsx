@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, MapPin } from 'lucide-react';
 import { templeAPI } from '../api';
 import { useNavigate } from 'react-router-dom';
+import ImageFromDrive from '../components/ImageFromDrive';
 
 interface Temple {
   id: number;
@@ -32,9 +33,26 @@ export default function HomePage() {
     }
   };
 
-  const filteredTemples = temples.filter((temple) =>
-    temple.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    temple.location.toLowerCase().includes(searchQuery.toLowerCase())
+  const extractDriveFileId = (url: string) => {
+    if (!url) return null;
+    const match = url.match(/\/d\/([^/]+)/);
+    if (match && match[1]) return match[1];
+    const altMatch = url.match(/id=([^&]+)/);
+    if (altMatch && altMatch[1]) return altMatch[1];
+    return null;
+  };
+
+  const getDriveImageURL = (driveLink: string) => {
+    const fileId = extractDriveFileId(driveLink);
+    return fileId
+      ? `https://drive.google.com/uc?export=view&id=${fileId}`
+      : 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg';
+  };
+
+  const filteredTemples = temples.filter(
+    (temple) =>
+      temple.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      temple.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -54,7 +72,7 @@ export default function HomePage() {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search Temple Name..."
+              placeholder="Search Temple Name or Location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-4 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none text-lg shadow-lg"
@@ -66,7 +84,7 @@ export default function HomePage() {
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
           </div>
-        ) : (
+        ) : filteredTemples.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredTemples.map((temple) => (
               <div
@@ -74,14 +92,11 @@ export default function HomePage() {
                 className="bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl"
               >
                 <div className="h-56 overflow-hidden bg-gradient-to-br from-orange-200 to-red-200">
-                  <img
-                    src={temple.image_url}
-                    alt={temple.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://images.pexels.com/photos/1643383/pexels-photo-1643383.jpeg';
-                    }}
-                  />
+                  <ImageFromDrive
+  driveLink={temple.image_url}
+  alt={temple.name}
+  className="w-full h-full object-cover"
+/>
                 </div>
                 <div className="p-6">
                   <h3 className="text-2xl font-bold text-gray-900 mb-3">
@@ -101,9 +116,7 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        )}
-
-        {!loading && filteredTemples.length === 0 && (
+        ) : (
           <div className="text-center py-12">
             <p className="text-xl text-gray-600">No temples found</p>
           </div>
